@@ -1,0 +1,9 @@
+# Keep Linux shell scripts using Unix LF line endings
+*.sh text eol=lf
+
+# Terraform files
+*.tf text eol=lf
+*.tfvars text eol=lf
+
+# Terraform provider lock file
+.terraform.lock.hcl text eol=lf
