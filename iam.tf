@@ -277,7 +277,27 @@ resource "aws_iam_policy" "platform_ops_terraform" {
       },
 
       ###################################################
-      # 4. Pass DP EKS Roles to AWS Services
+      # 4. Read IAM Resources for Terraform State Refresh
+      ###################################################
+      {
+        Sid    = "ReadDPIAMResources"
+        Effect = "Allow"
+
+        Action = [
+          "iam:GetRole",
+          "iam:GetPolicy",
+          "iam:GetPolicyVersion",
+          "iam:GetInstanceProfile",
+          "iam:ListAttachedRolePolicies",
+          "iam:ListRolePolicies",
+          "iam:ListInstanceProfilesForRole"
+        ]
+
+        Resource = "*"
+      },
+
+      ###################################################
+      # 5. Pass DP EKS Roles to AWS Services
       ###################################################
       {
         Sid    = "PassDPEKSRoles"
