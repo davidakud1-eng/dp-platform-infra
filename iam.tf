@@ -174,6 +174,8 @@ resource "aws_iam_policy" "platform_ops_terraform" {
 
           "ec2:AllocateAddress",
           "ec2:ReleaseAddress",
+          "ec2:AssociateAddress",
+          "ec2:DisassociateAddress",
 
           "ec2:CreateNatGateway",
           "ec2:DeleteNatGateway",
