@@ -38,26 +38,33 @@ resource "aws_iam_instance_profile" "platform_profile" {
 
   name = "dp-platform-instance-profile"
   role = aws_iam_role.platform_role.name
-
 }
+
+#########################################################
+# SSM Access
+#########################################################
+
 resource "aws_iam_role_policy_attachment" "ssm" {
 
   role       = aws_iam_role.platform_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-
 }
+
+#########################################################
+# EC2 Read-Only Access
+#########################################################
 
 resource "aws_iam_role_policy_attachment" "ec2_readonly" {
 
   role       = aws_iam_role.platform_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
-
 }
 
 
 #########################################################################
 #########################################################################
 #########################################################################
+
 
 #########################################################
 # DP Platform Operations IAM Role
@@ -105,7 +112,7 @@ resource "aws_iam_instance_profile" "platform_ops_profile" {
 }
 
 #########################################################
-# SSM Access
+# Platform Operations - SSM Access
 #########################################################
 
 resource "aws_iam_role_policy_attachment" "platform_ops_ssm" {
@@ -115,7 +122,7 @@ resource "aws_iam_role_policy_attachment" "platform_ops_ssm" {
 }
 
 #########################################################
-# EC2 Read-Only Access
+# Platform Operations - EC2 Read-Only Access
 #########################################################
 
 resource "aws_iam_role_policy_attachment" "platform_ops_ec2_readonly" {
@@ -164,6 +171,12 @@ resource "aws_iam_policy" "platform_ops_terraform" {
           "ec2:DeleteInternetGateway",
           "ec2:AttachInternetGateway",
           "ec2:DetachInternetGateway",
+
+          "ec2:AllocateAddress",
+          "ec2:ReleaseAddress",
+
+          "ec2:CreateNatGateway",
+          "ec2:DeleteNatGateway",
 
           "ec2:CreateRouteTable",
           "ec2:DeleteRouteTable",
@@ -310,6 +323,8 @@ resource "aws_iam_role_policy_attachment" "platform_ops_terraform" {
   role       = aws_iam_role.platform_ops_role.name
   policy_arn = aws_iam_policy.platform_ops_terraform.arn
 }
+
+
 #########################################################
 # DP Platform Ops - Terraform Remote State Policy
 #########################################################
