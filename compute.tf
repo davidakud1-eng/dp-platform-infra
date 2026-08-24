@@ -121,9 +121,8 @@ resource "aws_instance" "build_agent" {
 #########################################################
 
 resource "aws_instance" "platform_ops" {
-
   ami                         = var.amazon_linux_ami_id
-  instance_type               = var.instance_type
+  instance_type               = var.platform_ops_instance_type
   subnet_id                   = aws_subnet.public["us-east-2b"].id
   key_name                    = var.key_pair_name
   vpc_security_group_ids      = [aws_security_group.platform_ops.id]
@@ -137,6 +136,7 @@ resource "aws_instance" "platform_ops" {
       associate_public_ip_address
     ]
   }
+
   metadata_options {
     http_endpoint               = "enabled"
     http_tokens                 = "required"
@@ -167,5 +167,4 @@ resource "aws_instance" "platform_ops" {
       Role      = "Platform Operations"
     }
   )
-
 }
