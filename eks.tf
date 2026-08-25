@@ -195,3 +195,29 @@ resource "aws_vpc_security_group_ingress_rule" "platform_ops_to_eks_api" {
 
   description = "Allow Platform Ops to access EKS private API"
 }
+
+#########################################################
+# EKS Pod Identity Agent
+# Provides AWS credentials to Kubernetes workloads
+#########################################################
+
+resource "aws_eks_addon" "pod_identity_agent" {
+
+  count = var.enable_eks_runtime ? 1 : 0
+
+  cluster_name = aws_eks_cluster.dp_cluster[0].name
+  addon_name   = "eks-pod-identity-agent"
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name      = "dp-eks-pod-identity-agent"
+      Component = "Kubernetes"
+      Role      = "Pod AWS Identity"
+    }
+  )
+
+  depends_on = [
+    aws_eks_node_group.dp_nodes
+  ]
+}

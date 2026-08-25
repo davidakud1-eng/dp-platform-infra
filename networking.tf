@@ -1,8 +1,17 @@
+#########################################################
+# Availability Zones
+#########################################################
+
 data "aws_availability_zones" "available" {
   state = "available"
 }
 
+#########################################################
+# DP VPC
+#########################################################
+
 resource "aws_vpc" "dp_vpc" {
+
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
   enable_dns_hostnames = true
@@ -11,6 +20,11 @@ resource "aws_vpc" "dp_vpc" {
     Name = "dp-vpc"
   }
 }
+
+#########################################################
+# Public Subnets
+# Used by internet-facing AWS load balancers
+#########################################################
 
 resource "aws_subnet" "public" {
 
@@ -22,10 +36,17 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "dp-public-${each.key}"
-    Tier = "public"
+    Name                     = "dp-public-${each.key}"
+    Tier                     = "public"
+    "kubernetes.io/role/elb" = "1"
   }
 }
+
+#########################################################
+# Private Subnets
+# Used by EKS worker nodes and internal load balancers
+#########################################################
+
 resource "aws_subnet" "private" {
 
   for_each = var.private_subnets
@@ -35,10 +56,16 @@ resource "aws_subnet" "private" {
   availability_zone = each.key
 
   tags = {
-    Name = "dp-private-${each.key}"
-    Tier = "private"
+    Name                              = "dp-private-${each.key}"
+    Tier                              = "private"
+    "kubernetes.io/role/internal-elb" = "1"
   }
 }
+
+#########################################################
+# Internet Gateway
+#########################################################
+
 resource "aws_internet_gateway" "dp_igw" {
 
   vpc_id = aws_vpc.dp_vpc.id
@@ -46,8 +73,12 @@ resource "aws_internet_gateway" "dp_igw" {
   tags = {
     Name = "dp-igw"
   }
-
 }
+
+#########################################################
+# Public Route Table
+#########################################################
+
 resource "aws_route_table" "public" {
 
   vpc_id = aws_vpc.dp_vpc.id
@@ -60,22 +91,23 @@ resource "aws_route_table" "public" {
   tags = {
     Name = "dp-public-route-table"
   }
-
 }
+
+#########################################################
+# Public Subnet Route Table Associations
+#########################################################
+
 resource "aws_route_table_association" "public_2a" {
 
   subnet_id      = aws_subnet.public["us-east-2a"].id
   route_table_id = aws_route_table.public.id
-
 }
+
 resource "aws_route_table_association" "public_2b" {
 
   subnet_id      = aws_subnet.public["us-east-2b"].id
   route_table_id = aws_route_table.public.id
-
 }
-
-
 
 #########################################################
 # NAT Gateway Elastic IP
