@@ -233,3 +233,94 @@ resource "aws_security_group_rule" "artifactory_from_build_agent" {
   security_group_id        = aws_security_group.platform_ops.id
   source_security_group_id = aws_security_group.build_agent.id
 }
+
+
+
+
+
+#########################################################
+# EKS Prometheus Monitoring Access
+#
+# Allows Prometheus workloads running in EKS to scrape
+# metrics from the DP platform EC2 instances.
+#########################################################
+
+
+#########################################################
+# Node Exporter - Jenkins Controller
+#########################################################
+
+resource "aws_security_group_rule" "node_exporter_from_eks_to_jenkins" {
+
+  count = var.enable_eks_runtime ? 1 : 0
+
+  type        = "ingress"
+  description = "Node Exporter from EKS Prometheus"
+  from_port   = 9100
+  to_port     = 9100
+  protocol    = "tcp"
+
+  security_group_id = aws_security_group.jenkins.id
+
+  source_security_group_id = aws_eks_cluster.dp_cluster[0].vpc_config[0].cluster_security_group_id
+}
+
+
+#########################################################
+# Node Exporter - Build Agent
+#########################################################
+
+resource "aws_security_group_rule" "node_exporter_from_eks_to_build_agent" {
+
+  count = var.enable_eks_runtime ? 1 : 0
+
+  type        = "ingress"
+  description = "Node Exporter from EKS Prometheus"
+  from_port   = 9100
+  to_port     = 9100
+  protocol    = "tcp"
+
+  security_group_id = aws_security_group.build_agent.id
+
+  source_security_group_id = aws_eks_cluster.dp_cluster[0].vpc_config[0].cluster_security_group_id
+}
+
+
+#########################################################
+# Node Exporter - Platform Operations
+#########################################################
+
+resource "aws_security_group_rule" "node_exporter_from_eks_to_platform_ops" {
+
+  count = var.enable_eks_runtime ? 1 : 0
+
+  type        = "ingress"
+  description = "Node Exporter from EKS Prometheus"
+  from_port   = 9100
+  to_port     = 9100
+  protocol    = "tcp"
+
+  security_group_id = aws_security_group.platform_ops.id
+
+  source_security_group_id = aws_eks_cluster.dp_cluster[0].vpc_config[0].cluster_security_group_id
+}
+
+
+#########################################################
+# Jenkins Prometheus Plugin - EKS Prometheus
+#########################################################
+
+resource "aws_security_group_rule" "jenkins_metrics_from_eks" {
+
+  count = var.enable_eks_runtime ? 1 : 0
+
+  type        = "ingress"
+  description = "Jenkins Prometheus metrics from EKS"
+  from_port   = 8080
+  to_port     = 8080
+  protocol    = "tcp"
+
+  security_group_id = aws_security_group.jenkins.id
+
+  source_security_group_id = aws_eks_cluster.dp_cluster[0].vpc_config[0].cluster_security_group_id
+}
