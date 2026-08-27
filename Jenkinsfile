@@ -43,6 +43,16 @@ pipeline {
 
         TF_IN_AUTOMATION = 'true'
         TF_INPUT = 'false'
+
+        // ================================================================
+        // Jenkins Parameter Mapping
+        //
+        // Jenkins build parameters are explicitly mapped to environment
+        // variables for shell commands executed by the pipeline.
+        // ================================================================
+
+        DP_EKS_RUNTIME_ENABLED = "${params.EKS_RUNTIME_ENABLED}"
+        DP_TERRAFORM_APPLY = "${params.TERRAFORM_APPLY}"
     }
 
     stages {
@@ -58,7 +68,10 @@ pipeline {
         }
 
         // ==================================================================
-        // Verify Terraform and AWS CLI
+        // Verify Terraform, AWS CLI, and AWS Execution Identity
+        //
+        // The AWS identity should resolve to the IAM role attached to the
+        // DP Platform Operations EC2 instance.
         // ==================================================================
 
         stage('Verify Tooling') {
@@ -117,11 +130,11 @@ pipeline {
         // ==================================================================
         // Terraform Plan
         //
-        // EKS runtime is enabled by default during integration testing.
-        //
         // EKS_RUNTIME_ENABLED controls whether Terraform includes the
-        // ephemeral EKS runtime and its dependent infrastructure in the
-        // desired state.
+        // ephemeral EKS runtime and its dependent infrastructure.
+        //
+        // The Jenkins parameter is mapped to DP_EKS_RUNTIME_ENABLED so
+        // Terraform receives an explicit boolean value.
         //
         // The resulting plan is saved so that, when TERRAFORM_APPLY=true,
         // Jenkins applies exactly the plan produced by this stage.
@@ -131,12 +144,12 @@ pipeline {
             steps {
                 sh '''
                     echo "=== DP TERRAFORM RUNTIME CONFIGURATION ==="
-                    echo "EKS_RUNTIME_ENABLED=${EKS_RUNTIME_ENABLED}"
-                    echo "TERRAFORM_APPLY=${TERRAFORM_APPLY}"
+                    echo "EKS_RUNTIME_ENABLED=${DP_EKS_RUNTIME_ENABLED}"
+                    echo "TERRAFORM_APPLY=${DP_TERRAFORM_APPLY}"
 
                     terraform plan \
                         -input=false \
-                        -var="enable_eks_runtime=${EKS_RUNTIME_ENABLED}" \
+                        -var="enable_eks_runtime=${DP_EKS_RUNTIME_ENABLED}" \
                         -out=dp.tfplan
                 '''
             }
@@ -194,8 +207,8 @@ pipeline {
         //   1. EKS is part of the desired runtime, and
         //   2. Terraform was actually applied.
         //
-        // This verifies AWS-side creation of the EKS cluster. Kubernetes
-        // administration remains the responsibility of Platform Ops.
+        // This verifies AWS-side creation of the EKS cluster and confirms
+        // that Platform Ops can authenticate to and communicate with it.
         // ==================================================================
 
         stage('Verify EKS Runtime') {
