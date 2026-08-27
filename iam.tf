@@ -30,6 +30,7 @@ resource "aws_iam_role" "platform_role" {
   )
 }
 
+
 #########################################################
 # Instance Profile
 #########################################################
@@ -40,6 +41,7 @@ resource "aws_iam_instance_profile" "platform_profile" {
   role = aws_iam_role.platform_role.name
 }
 
+
 #########################################################
 # SSM Access
 #########################################################
@@ -49,6 +51,7 @@ resource "aws_iam_role_policy_attachment" "ssm" {
   role       = aws_iam_role.platform_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
+
 
 #########################################################
 # EC2 Read-Only Access
@@ -101,6 +104,7 @@ resource "aws_iam_role" "platform_ops_role" {
   )
 }
 
+
 #########################################################
 # Platform Operations Instance Profile
 #########################################################
@@ -110,6 +114,7 @@ resource "aws_iam_instance_profile" "platform_ops_profile" {
   name = "dp-platform-ops-instance-profile"
   role = aws_iam_role.platform_ops_role.name
 }
+
 
 #########################################################
 # Platform Operations - SSM Access
@@ -121,6 +126,7 @@ resource "aws_iam_role_policy_attachment" "platform_ops_ssm" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+
 #########################################################
 # Platform Operations - EC2 Read-Only Access
 #########################################################
@@ -130,6 +136,7 @@ resource "aws_iam_role_policy_attachment" "platform_ops_ec2_readonly" {
   role       = aws_iam_role.platform_ops_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
 }
+
 
 #########################################################
 # DP Platform Operations - Terraform Execution Policy
@@ -241,7 +248,13 @@ resource "aws_iam_policy" "platform_ops_terraform" {
 
           "eks:AssociateAccessPolicy",
           "eks:DisassociateAccessPolicy",
-          "eks:ListAssociatedAccessPolicies"
+          "eks:ListAssociatedAccessPolicies",
+
+          "eks:CreatePodIdentityAssociation",
+          "eks:DescribePodIdentityAssociation",
+          "eks:UpdatePodIdentityAssociation",
+          "eks:DeletePodIdentityAssociation",
+          "eks:ListPodIdentityAssociations"
         ]
 
         Resource = "*"
@@ -279,7 +292,62 @@ resource "aws_iam_policy" "platform_ops_terraform" {
       },
 
       ###################################################
-      # 4. Read IAM Resources for Terraform State Refresh
+      # 4. Manage AWS Load Balancer Controller IAM Role
+      ###################################################
+      {
+        Sid    = "ManageDPALBControllerRole"
+        Effect = "Allow"
+
+        Action = [
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:GetRole",
+          "iam:UpdateAssumeRolePolicy",
+          "iam:TagRole",
+          "iam:UntagRole",
+
+          "iam:AttachRolePolicy",
+          "iam:DetachRolePolicy",
+          "iam:ListAttachedRolePolicies",
+
+          "iam:PutRolePolicy",
+          "iam:GetRolePolicy",
+          "iam:DeleteRolePolicy",
+          "iam:ListRolePolicies"
+        ]
+
+        Resource = [
+          "arn:aws:iam::*:role/dp-aws-load-balancer-controller-role"
+        ]
+      },
+
+      ###################################################
+      # 5. Manage AWS Load Balancer Controller IAM Policy
+      ###################################################
+      {
+        Sid    = "ManageDPALBControllerPolicy"
+        Effect = "Allow"
+
+        Action = [
+          "iam:CreatePolicy",
+          "iam:DeletePolicy",
+          "iam:GetPolicy",
+          "iam:GetPolicyVersion",
+          "iam:ListPolicyVersions",
+          "iam:CreatePolicyVersion",
+          "iam:DeletePolicyVersion",
+          "iam:SetDefaultPolicyVersion",
+          "iam:TagPolicy",
+          "iam:UntagPolicy"
+        ]
+
+        Resource = [
+          "arn:aws:iam::*:policy/dp-aws-load-balancer-controller-policy"
+        ]
+      },
+
+      ###################################################
+      # 6. Read IAM Resources for Terraform State Refresh
       ###################################################
       {
         Sid    = "ReadDPIAMResources"
@@ -299,7 +367,7 @@ resource "aws_iam_policy" "platform_ops_terraform" {
       },
 
       ###################################################
-      # 5. Pass DP EKS Roles to AWS Services
+      # 7. Pass DP EKS Roles to AWS Services
       ###################################################
       {
         Sid    = "PassDPEKSRoles"
@@ -322,6 +390,29 @@ resource "aws_iam_policy" "platform_ops_terraform" {
             ]
           }
         }
+      },
+
+      ###################################################
+      # 8. Pass AWS Load Balancer Controller Role
+      #    to EKS Pod Identity
+      ###################################################
+      {
+        Sid    = "PassDPALBControllerRole"
+        Effect = "Allow"
+
+        Action = [
+          "iam:PassRole"
+        ]
+
+        Resource = [
+          "arn:aws:iam::*:role/dp-aws-load-balancer-controller-role"
+        ]
+
+        Condition = {
+          StringEquals = {
+            "iam:PassedToService" = "pods.eks.amazonaws.com"
+          }
+        }
       }
     ]
   })
@@ -335,6 +426,7 @@ resource "aws_iam_policy" "platform_ops_terraform" {
     }
   )
 }
+
 
 #########################################################
 # Attach Terraform Execution Policy to Platform Ops
@@ -404,6 +496,7 @@ resource "aws_iam_policy" "platform_ops_terraform_state" {
     }
   )
 }
+
 
 #########################################################
 # Attach Terraform State Policy to Platform Ops
