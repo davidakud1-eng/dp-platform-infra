@@ -30,7 +30,7 @@ pipeline {
 
         booleanParam(
             name: 'TERRAFORM_APPLY',
-            defaultValue: true,
+            defaultValue: false,
             description: 'Apply the generated Terraform plan to AWS.'
         )
     }
