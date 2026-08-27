@@ -9,7 +9,7 @@ pipeline {
     parameters {
         booleanParam(
             name: 'EKS_RUNTIME_ENABLED',
-            defaultValue: false,
+            defaultValue: true,
             description: 'Include the ephemeral DP EKS runtime in the Terraform plan.'
         )
     }
